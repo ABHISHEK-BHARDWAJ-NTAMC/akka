@@ -62,11 +62,11 @@ private[akka] class AffinityPool(
     def getNext = executionCounter.incrementAndGet() % parallelism
     val runnableHash = command.hashCode()
 
-    val workQueueIndex =
-      if (runnableToWorkerQueueIndex.size() > fairDistributionThreshold)
-        Math.abs(sbhash(runnableHash)) % parallelism
-      else
-        runnableToWorkerQueueIndex.getOrElseUpdate(command.hashCode, getNext)
+    val workQueueIndex = Math.abs(runnableHash) % parallelism
+    //      if (runnableToWorkerQueueIndex.size() > fairDistributionThreshold)
+    //        Math.abs(sbhash(runnableHash)) % parallelism
+    //      else
+    //        runnableToWorkerQueueIndex.getOrElseUpdate(command.hashCode, getNext)
 
     workQueues(workQueueIndex)
   }
@@ -191,7 +191,7 @@ private[akka] class AffinityPool(
           state = Spinning
           spins += 1
         case Spinning ⇒
-          onSpinWaitMethodHandle.foreach(_.invokeExact())
+          //onSpinWaitMethodHandle.foreach(_.invokeExact())
           spins += 1
           if (spins > maxSpins) {
             state = Yielding

@@ -18,17 +18,18 @@ import org.openjdk.jmh.annotations._
 @Measurement(iterations = 10, time = 15, timeUnit = TimeUnit.SECONDS, batchSize = 1)
 class AffinityPoolComparativeBenchmark {
 
-  @Param(Array("1"))
+  @Param(Array("25"))
   var throughPut = 0
 
-  @Param(Array("affinity-dispatcher", "default-fj-dispatcher", "fixed-size-dispatcher"))
+  @Param(Array("affinity-dispatcher", "default-fj-dispatcher")) //@Param(Array("affinity-dispatcher"))
   var dispatcher = ""
 
   @Param(Array("SingleConsumerOnlyUnboundedMailbox")) //"default"
   var mailbox = ""
 
-  final val numThreads, numActors = 8
-  final val numMessagesPerActorPair = 2000000
+  final val numThreads = 8
+  final val numActors = 16
+  final val numMessagesPerActorPair = 4000000
   final val totalNumberOfMessages = numMessagesPerActorPair * (numActors / 2)
 
   implicit var system: ActorSystem = _
@@ -40,6 +41,8 @@ class AffinityPoolComparativeBenchmark {
 
     val mailboxConf = mailbox match {
       case "default" => ""
+      case "ManyToOneArrayMailbox" =>
+        s"""default-mailbox.mailbox-type = "${classOf[ManyToOneArrayMailbox].getName}""""
       case "SingleConsumerOnlyUnboundedMailbox" =>
         s"""default-mailbox.mailbox-type = "${classOf[akka.dispatch.SingleConsumerOnlyUnboundedMailbox].getName}""""
     }
@@ -56,6 +59,7 @@ class AffinityPoolComparativeBenchmark {
           |         parallelism-max = $numThreads
           |       }
           |       throughput = $throughPut
+          |       mailbox-type = "akka.actor.ManyToOneArrayMailbox"
           |     }
           |
           |     fixed-size-dispatcher {
@@ -75,14 +79,14 @@ class AffinityPoolComparativeBenchmark {
           |         task-queue-size = 512
           |         idle-cpu-level = 5
           |         fair-work-distribution-threshold = ${Int.MaxValue}
-          |     }
+          |       }
           |       throughput = $throughPut
+          |       mailbox-type = "akka.actor.ManyToOneArrayMailbox"
           |     }
           |     $mailboxConf
           |   }
           | }
-      """.stripMargin
-    ))
+      """.stripMargin))
   }
 
   @TearDown(Level.Trial)
